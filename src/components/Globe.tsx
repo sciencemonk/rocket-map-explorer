@@ -10,7 +10,7 @@ interface GlobeProps {
 
 const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const mapInstance = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapbox_token') || '');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
@@ -24,7 +24,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
     mapboxgl.accessToken = mapboxToken;
     
-    map.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-v9',
       projection: 'globe',
@@ -33,17 +33,19 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       pitch: 45,
     });
 
-    map.current.addControl(
+    mapInstance.current = map;
+
+    map.addControl(
       new mapboxgl.NavigationControl({
         visualizePitch: true,
       }),
       'top-right'
     );
 
-    map.current.scrollZoom.disable();
+    map.scrollZoom.disable();
 
-    map.current.on('style.load', () => {
-      map.current?.setFog({
+    map.on('style.load', () => {
+      map.setFog({
         color: 'rgb(255, 255, 255)',
         'high-color': 'rgb(200, 200, 225)',
         'horizon-blend': 0.2,
@@ -58,53 +60,61 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     let spinEnabled = true;
 
     function spinGlobe() {
-      if (!map.current) return;
+      if (!mapInstance.current) return;
       
-      const zoom = map.current.getZoom();
+      const zoom = mapInstance.current.getZoom();
       if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
         let distancePerSecond = 360 / secondsPerRevolution;
         if (zoom > slowSpinZoom) {
           const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
           distancePerSecond *= zoomDif;
         }
-        const center = map.current.getCenter();
+        const center = mapInstance.current.getCenter();
         center.lng -= distancePerSecond;
-        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+        mapInstance.current.easeTo({ center, duration: 1000, easing: (n) => n });
       }
     }
 
-    map.current.on('mousedown', () => {
+    map.on('mousedown', () => {
       userInteracting = true;
     });
     
-    map.current.on('dragstart', () => {
+    map.on('dragstart', () => {
       userInteracting = true;
     });
     
-    map.current.on('mouseup', () => {
+    map.on('mouseup', () => {
       userInteracting = false;
       spinGlobe();
     });
     
-    map.current.on('touchend', () => {
+    map.on('touchend', () => {
       userInteracting = false;
       spinGlobe();
     });
 
-    map.current.on('moveend', () => {
+    map.on('moveend', () => {
       spinGlobe();
     });
 
     spinGlobe();
 
     return () => {
-      map.current?.remove();
+      // Clean up markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      
+      // Remove map
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
     };
   }, [mapboxToken]);
 
   // Update markers when launches change
   useEffect(() => {
-    if (!map.current) return;
+    if (!mapInstance.current) return;
 
     // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
@@ -117,7 +127,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       
       const marker = new mapboxgl.Marker(el)
         .setLngLat([launch.longitude, launch.latitude])
-        .addTo(map.current!);
+        .addTo(mapInstance.current!);
 
       el.addEventListener('click', () => onMarkerClick(launch));
       markersRef.current.push(marker);
