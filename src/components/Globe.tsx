@@ -39,16 +39,39 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
     // Earth setup
     const earthGeometry = new THREE.SphereGeometry(100, 64, 64);
-    const earthTexture = new THREE.TextureLoader().load('/earth-blue-marble.jpg');
+    
+    // Load Earth textures
+    const textureLoader = new THREE.TextureLoader();
+    const earthTexture = textureLoader.load('/earth-day.jpg');
+    const bumpTexture = textureLoader.load('/earth-topology.jpg');
+    const specularTexture = textureLoader.load('/earth-specular.jpg');
+    const cloudsTexture = textureLoader.load('/earth-clouds.png');
+
+    // Create Earth material with realistic shading
     const earthMaterial = new THREE.MeshPhongMaterial({
       map: earthTexture,
+      bumpMap: bumpTexture,
       bumpScale: 0.5,
+      specularMap: specularTexture,
+      specular: new THREE.Color('grey'),
+      shininess: 10,
     });
+
     const earth = new THREE.Mesh(earthGeometry, earthMaterial);
     scene.add(earth);
 
+    // Add clouds layer
+    const cloudsGeometry = new THREE.SphereGeometry(102, 64, 64);
+    const cloudsMaterial = new THREE.MeshPhongMaterial({
+      map: cloudsTexture,
+      transparent: true,
+      opacity: 0.4,
+    });
+    const clouds = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
+    scene.add(clouds);
+
     // Atmosphere
-    const atmosphereGeometry = new THREE.SphereGeometry(102, 64, 64);
+    const atmosphereGeometry = new THREE.SphereGeometry(104, 64, 64);
     const atmosphereMaterial = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec3 vNormal;
@@ -71,10 +94,10 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     scene.add(atmosphere);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x404040, 1);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 1);
+    const pointLight = new THREE.PointLight(0xffffff, 2);
     pointLight.position.set(100, 100, 100);
     scene.add(pointLight);
 
@@ -83,6 +106,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       earth.rotation.y += 0.001;
+      clouds.rotation.y += 0.0012;
       renderer.render(scene, camera);
     };
     animate();
