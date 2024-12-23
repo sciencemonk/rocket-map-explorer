@@ -71,24 +71,26 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
-      <style jsx>{`
-        .custom-marker {
-          background: transparent;
-          border: none;
-        }
-        .glow {
-          box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073;
-          animation: glow 1.5s ease-in-out infinite alternate;
-        }
-        @keyframes glow {
-          from {
-            box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073;
+      <style>
+        {`
+          .custom-marker {
+            background: transparent;
+            border: none;
           }
-          to {
+          .glow {
             box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073;
+            animation: glow 1.5s ease-in-out infinite alternate;
           }
-        }
-      `}</style>
+          @keyframes glow {
+            from {
+              box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073;
+            }
+            to {
+              box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
