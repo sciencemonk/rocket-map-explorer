@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
 
 interface GlobeProps {
@@ -8,152 +9,145 @@ interface GlobeProps {
 }
 
 const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const markersRef = useRef<THREE.Mesh[]>([]);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapbox_token') || '');
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+
+  const handleSaveToken = () => {
+    localStorage.setItem('mapbox_token', mapboxToken);
+    window.location.reload();
+  };
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!mapContainer.current || !mapboxToken) return;
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.z = 200;
-    cameraRef.current = camera;
-
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // Earth setup
-    const earthGeometry = new THREE.SphereGeometry(100, 64, 64);
+    mapboxgl.accessToken = mapboxToken;
     
-    // Load Earth textures
-    const textureLoader = new THREE.TextureLoader();
-    const earthTexture = textureLoader.load('/earth-day.jpg');
-    const bumpTexture = textureLoader.load('/earth-topology.jpg');
-    const specularTexture = textureLoader.load('/earth-specular.jpg');
-    const cloudsTexture = textureLoader.load('/earth-clouds.png');
-
-    // Create Earth material with realistic shading
-    const earthMaterial = new THREE.MeshPhongMaterial({
-      map: earthTexture,
-      bumpMap: bumpTexture,
-      bumpScale: 0.5,
-      specularMap: specularTexture,
-      specular: new THREE.Color('grey'),
-      shininess: 10,
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/satellite-v9',
+      projection: 'globe',
+      zoom: 1.5,
+      center: [0, 20],
+      pitch: 45,
     });
 
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    scene.add(earth);
+    map.current.addControl(
+      new mapboxgl.NavigationControl({
+        visualizePitch: true,
+      }),
+      'top-right'
+    );
 
-    // Add clouds layer
-    const cloudsGeometry = new THREE.SphereGeometry(102, 64, 64);
-    const cloudsMaterial = new THREE.MeshPhongMaterial({
-      map: cloudsTexture,
-      transparent: true,
-      opacity: 0.4,
+    map.current.scrollZoom.disable();
+
+    map.current.on('style.load', () => {
+      map.current?.setFog({
+        color: 'rgb(255, 255, 255)',
+        'high-color': 'rgb(200, 200, 225)',
+        'horizon-blend': 0.2,
+      });
     });
-    const clouds = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
-    scene.add(clouds);
 
-    // Atmosphere
-    const atmosphereGeometry = new THREE.SphereGeometry(104, 64, 64);
-    const atmosphereMaterial = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    // Rotation animation
+    const secondsPerRevolution = 240;
+    const maxSpinZoom = 5;
+    const slowSpinZoom = 3;
+    let userInteracting = false;
+    let spinEnabled = true;
+
+    function spinGlobe() {
+      if (!map.current) return;
+      
+      const zoom = map.current.getZoom();
+      if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
+        let distancePerSecond = 360 / secondsPerRevolution;
+        if (zoom > slowSpinZoom) {
+          const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
+          distancePerSecond *= zoomDif;
         }
-      `,
-      fragmentShader: `
-        varying vec3 vNormal;
-        void main() {
-          float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-          gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
-        }
-      `,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    scene.add(atmosphere);
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 1);
-    scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 2);
-    pointLight.position.set(100, 100, 100);
-    scene.add(pointLight);
-
-    // Animation
-    let animationFrameId: number;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-      earth.rotation.y += 0.001;
-      clouds.rotation.y += 0.0012;
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    // Cleanup
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      renderer.dispose();
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+        const center = map.current.getCenter();
+        center.lng -= distancePerSecond;
+        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
       }
+    }
+
+    map.current.on('mousedown', () => {
+      userInteracting = true;
+    });
+    
+    map.current.on('dragstart', () => {
+      userInteracting = true;
+    });
+    
+    map.current.on('mouseup', () => {
+      userInteracting = false;
+      spinGlobe();
+    });
+    
+    map.current.on('touchend', () => {
+      userInteracting = false;
+      spinGlobe();
+    });
+
+    map.current.on('moveend', () => {
+      spinGlobe();
+    });
+
+    spinGlobe();
+
+    return () => {
+      map.current?.remove();
     };
-  }, []);
+  }, [mapboxToken]);
 
   // Update markers when launches change
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (!map.current) return;
 
-    // Remove old markers
-    markersRef.current.forEach((marker) => {
-      sceneRef.current?.remove(marker);
-    });
+    // Remove existing markers
+    markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
     // Add new markers
     launches.forEach((launch) => {
-      const markerGeometry = new THREE.SphereGeometry(2, 32, 32);
-      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+      const el = document.createElement('div');
+      el.className = 'w-4 h-4 bg-primary rounded-full glow cursor-pointer';
       
-      // Convert lat/long to 3D position
-      const lat = launch.latitude * (Math.PI / 180);
-      const lon = -launch.longitude * (Math.PI / 180);
-      const radius = 102;
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([launch.longitude, launch.latitude])
+        .addTo(map.current!);
 
-      marker.position.x = radius * Math.cos(lat) * Math.cos(lon);
-      marker.position.y = radius * Math.sin(lat);
-      marker.position.z = radius * Math.cos(lat) * Math.sin(lon);
-
-      sceneRef.current?.add(marker);
+      el.addEventListener('click', () => onMarkerClick(launch));
       markersRef.current.push(marker);
     });
-  }, [launches]);
+  }, [launches, onMarkerClick]);
+
+  if (!mapboxToken) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <input
+          type="password"
+          className="px-4 py-2 bg-secondary rounded"
+          placeholder="Enter Mapbox token"
+          value={mapboxToken}
+          onChange={(e) => setMapboxToken(e.target.value)}
+        />
+        <button
+          className="px-4 py-2 bg-primary rounded"
+          onClick={handleSaveToken}
+        >
+          Save Token
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="w-full h-full">
-      {/* Globe will be rendered here */}
+    <div className="relative w-full h-full">
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
     </div>
   );
 };
