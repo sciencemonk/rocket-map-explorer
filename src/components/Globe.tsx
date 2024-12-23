@@ -71,7 +71,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
-      <style jsx global>{`
+      <style jsx>{`
         .custom-marker {
           background: transparent;
           border: none;
