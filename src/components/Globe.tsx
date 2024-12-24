@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
 import { createLaunchMarker } from './LaunchMarker';
 import { flyToLocation } from '@/utils/mapUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface GlobeProps {
   launches: Launch[];
@@ -13,11 +14,32 @@ interface GlobeProps {
 const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapbox_token') || '');
+  const [mapboxToken, setMapboxToken] = useState('');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('mapbox_token');
+    if (storedToken) {
+      setMapboxToken(storedToken);
+    }
+  }, []);
 
   const handleSaveToken = () => {
+    if (!mapboxToken.startsWith('pk.')) {
+      toast({
+        title: "Invalid Token",
+        description: "Please enter a valid Mapbox public token starting with 'pk.'",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     localStorage.setItem('mapbox_token', mapboxToken);
+    toast({
+      title: "Token Saved",
+      description: "Your Mapbox token has been saved successfully.",
+    });
     window.location.reload();
   };
 
@@ -139,15 +161,21 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   if (!mapboxToken) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-semibold mb-2">Enter Mapbox Token</h2>
+          <p className="text-sm text-muted-foreground">
+            Please enter your Mapbox public token (starts with 'pk.')
+          </p>
+        </div>
         <input
           type="password"
-          className="px-4 py-2 bg-secondary rounded"
+          className="px-4 py-2 bg-secondary rounded w-96 max-w-full"
           placeholder="Enter Mapbox token"
           value={mapboxToken}
           onChange={(e) => setMapboxToken(e.target.value)}
         />
         <button
-          className="px-4 py-2 bg-primary rounded"
+          className="px-4 py-2 bg-primary rounded hover:bg-primary/90 transition-colors"
           onClick={handleSaveToken}
         >
           Save Token
