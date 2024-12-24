@@ -8,3 +8,20 @@ export interface Launch {
   latitude: number;
   longitude: number;
 }
+
+export interface LaunchResponse {
+  result: Array<{
+    id: string;
+    name: string;
+    date_str: string;
+    pad: {
+      name: string;
+      latitude: string;
+      longitude: string;
+    };
+    launch_description: string;
+    provider: {
+      name: string;
+    };
+  }>;
+}
