@@ -1,15 +1,27 @@
-const NOMINATIM_API = 'https://nominatim.openstreetmap.org/search';
-
 export const geocodeLocation = async (location: string): Promise<{ lat: number; lon: number } | null> => {
   try {
+    // First get the Mapbox token from our secure endpoint
+    const tokenResponse = await fetch('/api/mapbox-token');
+    const { token } = await tokenResponse.json();
+    
+    if (!token) {
+      console.error('No Mapbox token available');
+      return null;
+    }
+
+    // Use Mapbox's geocoding API
     const query = encodeURIComponent(location);
-    const response = await fetch(`${NOMINATIM_API}?q=${query}&format=json&limit=1`);
+    const response = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${token}&limit=1`
+    );
+    
     const data = await response.json();
     
-    if (data && data[0]) {
+    if (data.features && data.features[0]) {
+      const [lon, lat] = data.features[0].center;
       return {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon)
+        lat,
+        lon
       };
     }
     return null;
