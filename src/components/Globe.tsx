@@ -43,14 +43,15 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           pitch: 35,
           minZoom: 1,
           bearing: 0,
-          dragRotate: true, // Enable drag rotation
-          touchZoomRotate: true, // Enable touch zoom and rotate
-          touchPitch: true, // Enable touch pitch
+          dragRotate: true,
+          touchZoomRotate: true,
+          touchPitch: true,
+          interactive: true // Ensure all interactions are enabled
         });
 
         map.current = newMap;
 
-        // Add touch and mouse controls
+        // Add navigation controls with all features enabled
         newMap.addControl(
           new mapboxgl.NavigationControl({
             visualizePitch: true,
@@ -58,11 +59,6 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
             showCompass: true,
           }),
           'top-right'
-        );
-
-        // Add touch gesture handler
-        newMap.addControl(
-          new mapboxgl.TouchZoomRotateHandler()
         );
 
         newMap.on('style.load', () => {
