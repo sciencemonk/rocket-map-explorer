@@ -5,6 +5,7 @@ import { Launch } from '@/types';
 import Globe from '@/components/Globe';
 import LaunchList from '@/components/LaunchList';
 import LaunchModal from '@/components/LaunchModal';
+import Footer from '@/components/Footer';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -76,6 +77,7 @@ const Index = () => {
           </>
         )}
       </div>
+      <Footer />
       <LaunchModal
         launch={selectedLaunch}
         onClose={() => setSelectedLaunch(null)}
