@@ -10,10 +10,15 @@ interface CreateMarkerProps {
 
 export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps): mapboxgl.Marker => {
   const el = document.createElement('div');
-  el.className = 'relative group';
+  el.className = 'relative group cursor-pointer';
+  el.style.width = '32px';
+  el.style.height = '32px';
   
   const markerContainer = document.createElement('div');
-  markerContainer.className = 'w-8 h-8 flex items-center justify-center transform -translate-y-1/2';
+  markerContainer.className = 'w-8 h-8 flex items-center justify-center';
+  markerContainer.style.position = 'absolute';
+  markerContainer.style.transform = 'translate(-50%, -50%)';
+  markerContainer.style.zIndex = '1';
   
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('width', '32');
@@ -26,7 +31,7 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   svg.setAttribute('stroke-linejoin', 'round');
   svg.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
   
-  // Rocket icon path
+  // Rocket icon paths
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', 'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z');
   
@@ -47,10 +52,15 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   markerContainer.appendChild(svg);
   el.appendChild(markerContainer);
 
+  // Add tooltip
+  const tooltip = document.createElement('div');
+  tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap';
+  tooltip.textContent = launch.name;
+  el.appendChild(tooltip);
+
   const marker = new mapboxgl.Marker({
     element: el,
-    anchor: 'bottom',
-    offset: [0, 0]
+    anchor: 'center',
   })
     .setLngLat([launch.longitude, launch.latitude])
     .addTo(map);
