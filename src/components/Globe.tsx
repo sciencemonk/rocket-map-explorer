@@ -38,10 +38,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/satellite-v9',
           projection: 'globe',
-          zoom: 1.5,
-          center: [0, 20],
-          pitch: 45,
+          zoom: 1.7,  // Slightly increased zoom
+          center: [0, 0],  // Centered at [0,0] for better initial view
+          pitch: 35,  // Reduced pitch to show more of the globe
           minZoom: 1,
+          bearing: 0,  // Reset bearing to 0
         });
 
         map.current = newMap;
@@ -126,8 +127,8 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
   return (
     <div className="relative w-full h-full flex items-start">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" style={{ marginTop: '-5vh' }} />
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" style={{ marginTop: '-5vh' }} />
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
     </div>
   );
 };
