@@ -25,7 +25,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
     mapboxgl.accessToken = mapboxToken;
     
-    map.current = new mapboxgl.Map({
+    const newMap = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-v9',
       projection: 'globe',
@@ -34,17 +34,19 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       pitch: 45,
     });
 
-    map.current.addControl(
+    map.current = newMap;
+
+    newMap.addControl(
       new mapboxgl.NavigationControl({
         visualizePitch: true,
       }),
       'top-right'
     );
 
-    map.current.scrollZoom.disable();
+    newMap.scrollZoom.disable();
 
-    map.current.on('style.load', () => {
-      map.current?.setFog({
+    newMap.on('style.load', () => {
+      newMap.setFog({
         color: 'rgb(255, 255, 255)',
         'high-color': 'rgb(200, 200, 225)',
         'horizon-blend': 0.2,
@@ -59,47 +61,52 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     let spinEnabled = true;
 
     function spinGlobe() {
-      if (!map.current) return;
+      if (!newMap) return;
       
-      const zoom = map.current.getZoom();
+      const zoom = newMap.getZoom();
       if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
         let distancePerSecond = 360 / secondsPerRevolution;
         if (zoom > slowSpinZoom) {
           const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
           distancePerSecond *= zoomDif;
         }
-        const center = map.current.getCenter();
+        const center = newMap.getCenter();
         center.lng -= distancePerSecond;
-        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+        newMap.easeTo({ center, duration: 1000, easing: (n) => n });
       }
     }
 
-    map.current.on('mousedown', () => {
+    newMap.on('mousedown', () => {
       userInteracting = true;
     });
     
-    map.current.on('dragstart', () => {
+    newMap.on('dragstart', () => {
       userInteracting = true;
     });
     
-    map.current.on('mouseup', () => {
+    newMap.on('mouseup', () => {
       userInteracting = false;
       spinGlobe();
     });
     
-    map.current.on('touchend', () => {
+    newMap.on('touchend', () => {
       userInteracting = false;
       spinGlobe();
     });
 
-    map.current.on('moveend', () => {
+    newMap.on('moveend', () => {
       spinGlobe();
     });
 
     spinGlobe();
 
     return () => {
-      map.current?.remove();
+      // Clean up markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      // Remove map
+      newMap.remove();
+      map.current = null;
     };
   }, [mapboxToken]);
 
@@ -114,12 +121,12 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     // Add new markers
     launches.forEach((launch) => {
       const el = document.createElement('div');
-      el.className = 'w-4 h-4 bg-primary rounded-full glow cursor-pointer';
+      el.className = 'w-8 h-8 text-primary cursor-pointer hover:text-primary/80 transition-colors';
       
       // Create SVG icon
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', '24');
-      svg.setAttribute('height', '24');
+      svg.setAttribute('width', '32');
+      svg.setAttribute('height', '32');
       svg.setAttribute('viewBox', '0 0 24 24');
       svg.setAttribute('fill', 'none');
       svg.setAttribute('stroke', 'currentColor');
@@ -138,14 +145,22 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       svg.appendChild(path);
       svg.appendChild(circle);
       el.appendChild(svg);
-      
-      const marker = new mapboxgl.Marker(el)
+
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: 'bottom'
+      })
         .setLngLat([launch.longitude, launch.latitude])
-        .addTo(map.current!);
+        .addTo(map.current);
 
       el.addEventListener('click', () => onMarkerClick(launch));
       markersRef.current.push(marker);
     });
+
+    return () => {
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+    };
   }, [launches, onMarkerClick]);
 
   if (!mapboxToken) {
