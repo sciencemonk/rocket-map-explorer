@@ -5,6 +5,8 @@ import { Launch } from '@/types';
 import { createLaunchMarker } from './LaunchMarker';
 import { flyToLocation } from '@/utils/mapUtils';
 import { useToast } from '@/hooks/use-toast';
+import { setupGlobeAnimation } from '@/utils/globeAnimation';
+import { updateMarkerVisibility } from '@/utils/markerVisibility';
 
 interface GlobeProps {
   launches: Launch[];
@@ -25,47 +27,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     onMarkerClick(launch);
   };
 
-  const updateMarkerVisibility = () => {
-    if (!map.current) return;
-
-    const center = map.current.getCenter();
-    const zoom = map.current.getZoom();
-    const cameraBearing = map.current.getBearing();
-
-    markersRef.current.forEach((marker, index) => {
-      const markerLngLat = marker.getLngLat();
-      
-      // Calculate the angle between the marker and the center point
-      const angle = Math.atan2(
-        Math.sin(markerLngLat.lng - center.lng) * Math.cos(markerLngLat.lat),
-        Math.cos(center.lat) * Math.sin(markerLngLat.lat) -
-        Math.sin(center.lat) * Math.cos(markerLngLat.lat) * Math.cos(markerLngLat.lng - center.lng)
-      );
-
-      // Convert angle to degrees and normalize
-      const angleDeg = ((angle * 180) / Math.PI + 360) % 360;
-      
-      // Adjust for camera bearing
-      const adjustedAngle = (angleDeg - cameraBearing + 360) % 360;
-      
-      // Calculate if marker should be visible (within 90 degrees of center view)
-      const isVisible = Math.abs(adjustedAngle - 180) <= 90;
-      
-      // Get the marker element
-      const element = marker.getElement();
-      
-      // Update visibility
-      element.style.opacity = isVisible ? '1' : '0';
-      element.style.pointerEvents = isVisible ? 'auto' : 'none';
-    });
-  };
-
   useEffect(() => {
     const initializeMap = async () => {
       try {
         if (!mapContainer.current) return;
 
-        // Use the token directly for now
         mapboxgl.accessToken = 'pk.eyJ1IjoibWljaGFlbGFvIiwiYSI6ImNtNTE1dDhuMzFzemYycXEzbGZqNXRnM2kifQ.MLtu0XCi-r56Whozb0VXgw';
         
         const newMap = new mapboxgl.Map({
@@ -75,6 +41,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           zoom: 1.5,
           center: [0, 20],
           pitch: 45,
+          minZoom: 1,
         });
 
         map.current = newMap;
@@ -98,56 +65,14 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         });
 
         // Add event listeners for marker visibility
-        newMap.on('rotate', updateMarkerVisibility);
-        newMap.on('pitch', updateMarkerVisibility);
-        newMap.on('zoom', updateMarkerVisibility);
-        newMap.on('move', updateMarkerVisibility);
+        const handleVisibility = () => updateMarkerVisibility(newMap, markersRef.current);
+        newMap.on('rotate', handleVisibility);
+        newMap.on('pitch', handleVisibility);
+        newMap.on('zoom', handleVisibility);
+        newMap.on('move', handleVisibility);
 
-        const secondsPerRevolution = 240;
-        const maxSpinZoom = 5;
-        const slowSpinZoom = 3;
-        let userInteracting = false;
-        let spinEnabled = true;
-
-        function spinGlobe() {
-          if (!newMap) return;
-          
-          const zoom = newMap.getZoom();
-          if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
-            let distancePerSecond = 360 / secondsPerRevolution;
-            if (zoom > slowSpinZoom) {
-              const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
-              distancePerSecond *= zoomDif;
-            }
-            const center = newMap.getCenter();
-            center.lng -= distancePerSecond;
-            newMap.easeTo({ center, duration: 1000, easing: (n) => n });
-          }
-        }
-
-        newMap.on('mousedown', () => {
-          userInteracting = true;
-        });
-        
-        newMap.on('dragstart', () => {
-          userInteracting = true;
-        });
-        
-        newMap.on('mouseup', () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-        
-        newMap.on('touchend', () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-
-        newMap.on('moveend', () => {
-          spinGlobe();
-        });
-
-        spinGlobe();
+        // Setup globe animation
+        setupGlobeAnimation(newMap);
 
       } catch (error) {
         console.error('Error initializing map:', error);
@@ -172,8 +97,6 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
-    console.log('Adding markers for launches:', launches);
-
     // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
@@ -181,20 +104,19 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     // Add new markers
     launches.forEach((launch) => {
       if (launch.latitude && launch.longitude) {
-        console.log('Creating marker for launch:', launch.name, 'at:', launch.latitude, launch.longitude);
         const marker = createLaunchMarker({
           launch,
           map: map.current!,
           onClick: handleLaunchClick
         });
         markersRef.current.push(marker);
-      } else {
-        console.warn('Missing coordinates for launch:', launch.name);
       }
     });
 
     // Initial visibility check
-    updateMarkerVisibility();
+    if (map.current) {
+      updateMarkerVisibility(map.current, markersRef.current);
+    }
 
     return () => {
       markersRef.current.forEach(marker => marker.remove());
@@ -203,9 +125,9 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   }, [launches, mapLoaded]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
+    <div className="relative w-full h-full flex items-start">
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" style={{ marginTop: '-5vh' }} />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" style={{ marginTop: '-5vh' }} />
     </div>
   );
 };
