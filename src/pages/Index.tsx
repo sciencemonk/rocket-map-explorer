@@ -22,21 +22,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
-          <span>🌍</span>
-          Space Globe
-        </h1>
-        <div className="text-sm text-muted-foreground">
-          Created by{' '}
-          <a 
-            href="https://www.instagram.com/astroathens" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 transition-colors"
-          >
-            AstroAthens
-          </a>
+      <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
+            <span>🌍</span>
+            Space Globe
+          </h1>
+          <div className="text-sm text-muted-foreground text-right">
+            <span className="text-xs sm:text-sm">Created by{' '}</span>
+            <a 
+              href="https://www.instagram.com/astroathens" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80 transition-colors text-xs sm:text-sm"
+            >
+              AstroAthens
+            </a>
+          </div>
         </div>
       </nav>
       <div className={`flex flex-1 ${isMobile ? 'flex-col' : 'flex-row'}`}>
