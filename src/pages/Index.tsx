@@ -21,7 +21,8 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <span>🌍</span>
           Space Globe
         </h1>
         <div className="text-sm text-muted-foreground">
