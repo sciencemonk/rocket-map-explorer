@@ -16,6 +16,8 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   el.style.height = '24px';
   el.style.position = 'relative';
   el.style.cursor = 'pointer';
+  el.style.transformOrigin = 'center';
+  el.style.transform = 'translate(-50%, -50%)';
   
   // Create SVG container
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -28,6 +30,7 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   svg.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
+  svg.style.transform = 'scale(1.2)';
 
   // Add rocket paths
   const paths = [
@@ -69,7 +72,9 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   // Create and add the marker
   const marker = new mapboxgl.Marker({
     element: el,
-    anchor: 'bottom',
+    anchor: 'center',
+    rotationAlignment: 'map',
+    pitchAlignment: 'map'
   })
     .setLngLat([launch.longitude, launch.latitude])
     .addTo(map);
