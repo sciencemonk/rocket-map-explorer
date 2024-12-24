@@ -81,6 +81,7 @@ const Index = () => {
       <LaunchModal
         launch={selectedLaunch}
         onClose={() => setSelectedLaunch(null)}
+        onGoToSite={handleLaunchClick}
       />
     </div>
   );
