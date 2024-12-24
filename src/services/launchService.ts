@@ -5,15 +5,20 @@ import { supabase } from '@/integrations/supabase/client';
 export const fetchLaunches = async (): Promise<Launch[]> => {
   try {
     // Fetch API key from Supabase
-    const { data: { value: apiKey }, error: keyError } = await supabase
+    const { data, error: keyError } = await supabase
       .from('settings')
       .select('value')
       .eq('key', 'ROCKETLAUNCH_API_KEY')
       .single();
 
-    if (keyError) {
+    if (keyError || !data) {
       console.error('Error fetching API key:', keyError);
       throw new Error('Failed to fetch API key');
+    }
+
+    const apiKey = data.value;
+    if (!apiKey) {
+      throw new Error('API key not found in settings');
     }
 
     const response = await fetch('https://fdo.rocketlaunch.live/json/launches/next/30', {
@@ -26,11 +31,11 @@ export const fetchLaunches = async (): Promise<Launch[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data: LaunchResponse = await response.json();
+    const data2: LaunchResponse = await response.json();
     
     // Process launches sequentially to avoid rate limiting
     const launches = [];
-    for (const launch of data.result) {
+    for (const launch of data2.result) {
       const location = launch.pad.name;
       const coordinates = await geocodeLocation(location);
       
