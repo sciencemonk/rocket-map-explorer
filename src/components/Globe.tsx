@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
-import { MapPin } from 'lucide-react';
+import { createLaunchMarker } from './LaunchMarker';
+import { flyToLocation } from '@/utils/mapUtils';
 
 interface GlobeProps {
   launches: Launch[];
@@ -18,6 +19,13 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const handleSaveToken = () => {
     localStorage.setItem('mapbox_token', mapboxToken);
     window.location.reload();
+  };
+
+  const handleLaunchClick = (launch: Launch) => {
+    if (map.current) {
+      flyToLocation(map.current, launch.longitude, launch.latitude);
+    }
+    onMarkerClick(launch);
   };
 
   useEffect(() => {
@@ -53,7 +61,6 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       });
     });
 
-    // Rotation animation
     const secondsPerRevolution = 240;
     const maxSpinZoom = 5;
     const slowSpinZoom = 3;
@@ -101,66 +108,25 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     spinGlobe();
 
     return () => {
-      // Clean up markers
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
-      // Remove map
       newMap.remove();
       map.current = null;
     };
   }, [mapboxToken]);
 
-  // Update markers when launches change
   useEffect(() => {
     if (!map.current) return;
 
-    // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Add new markers
     launches.forEach((launch) => {
-      const el = document.createElement('div');
-      el.className = 'relative group';
-      
-      // Create marker container with glow effect
-      const markerContainer = document.createElement('div');
-      markerContainer.className = 'w-8 h-8 flex items-center justify-center transform -translate-y-1/2';
-      
-      // Create SVG icon with glow effect
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', '32');
-      svg.setAttribute('height', '32');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('stroke', '#FF4444');
-      svg.setAttribute('stroke-width', '2');
-      svg.setAttribute('stroke-linecap', 'round');
-      svg.setAttribute('stroke-linejoin', 'round');
-      svg.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
-      
-      // Add map-pin path with glow
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z');
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', '12');
-      circle.setAttribute('cy', '10');
-      circle.setAttribute('r', '3');
-      
-      svg.appendChild(path);
-      svg.appendChild(circle);
-      markerContainer.appendChild(svg);
-      el.appendChild(markerContainer);
-
-      const marker = new mapboxgl.Marker({
-        element: el,
-        anchor: 'bottom',
-        offset: [0, 0]
-      })
-        .setLngLat([launch.longitude, launch.latitude])
-        .addTo(map.current);
-
-      el.addEventListener('click', () => onMarkerClick(launch));
+      const marker = createLaunchMarker({
+        launch,
+        map: map.current!,
+        onClick: handleLaunchClick
+      });
       markersRef.current.push(marker);
     });
 
@@ -168,7 +134,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
     };
-  }, [launches, onMarkerClick]);
+  }, [launches]);
 
   if (!mapboxToken) {
     return (
