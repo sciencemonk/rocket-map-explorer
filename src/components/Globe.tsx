@@ -20,12 +20,24 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const { toast } = useToast();
 
-  const handleLaunchClick = (launch: Launch) => {
+  const navigateToLaunch = (launch: Launch) => {
     if (map.current) {
       flyToLocation(map.current, launch.longitude, launch.latitude);
     }
+  };
+
+  const handleLaunchClick = (launch: Launch) => {
+    navigateToLaunch(launch);
     onMarkerClick(launch);
   };
+
+  // Make navigateToLaunch available to parent components
+  useEffect(() => {
+    if (map.current) {
+      // @ts-ignore - This is fine since we're just attaching a method to the ref
+      mapContainer.current.navigateToLaunch = navigateToLaunch;
+    }
+  }, [mapLoaded]);
 
   useEffect(() => {
     const initializeMap = async () => {
