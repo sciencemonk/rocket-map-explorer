@@ -38,11 +38,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/satellite-v9',
           projection: 'globe',
-          zoom: 1.7,  // Slightly increased zoom
-          center: [0, 0],  // Centered at [0,0] for better initial view
-          pitch: 35,  // Reduced pitch to show more of the globe
+          zoom: 1.7,
+          center: [0, 0],
+          pitch: 35,
           minZoom: 1,
-          bearing: 0,  // Reset bearing to 0
+          bearing: 0,
         });
 
         map.current = newMap;
@@ -63,6 +63,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
             'horizon-blend': 0.2,
           });
           setMapLoaded(true);
+          
+          // Force a resize event after a short delay to ensure proper rendering
+          setTimeout(() => {
+            newMap.resize();
+          }, 100);
         });
 
         // Add event listeners for marker visibility
@@ -74,6 +79,19 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
         // Setup globe animation
         setupGlobeAnimation(newMap);
+
+        // Add resize handler for window changes
+        const handleResize = () => {
+          if (newMap) {
+            newMap.resize();
+          }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+          window.removeEventListener('resize', handleResize);
+        };
 
       } catch (error) {
         console.error('Error initializing map:', error);
