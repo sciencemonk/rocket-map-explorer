@@ -76,16 +76,22 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         );
 
         newMap.on('style.load', () => {
+          if (!newMap || !newMap.loaded()) return;
+          
           newMap.setFog({
             color: 'rgb(255, 255, 255)',
             'high-color': 'rgb(200, 200, 225)',
             'horizon-blend': 0.2,
           });
+          
           setMapLoaded(true);
           
-          setTimeout(() => {
-            newMap.resize();
-          }, 100);
+          // Ensure the map container exists and the map is loaded before resizing
+          if (mapContainer.current && newMap.loaded()) {
+            setTimeout(() => {
+              newMap.resize();
+            }, 100);
+          }
         });
 
         const handleVisibility = () => updateMarkerVisibility(newMap, markersRef.current);
@@ -97,7 +103,8 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         setupGlobeAnimation(newMap);
 
         const handleResize = () => {
-          if (newMap) {
+          // Only resize if map exists and is loaded
+          if (newMap && newMap.loaded() && mapContainer.current) {
             newMap.resize();
           }
         };
@@ -123,7 +130,9 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     return () => {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
-      map.current?.remove();
+      if (map.current?.loaded()) {
+        map.current.remove();
+      }
       map.current = null;
     };
   }, [toast]);
