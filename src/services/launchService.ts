@@ -21,7 +21,7 @@ export const fetchLaunches = async (): Promise<Launch[]> => {
       throw new Error('API key not found in settings');
     }
 
-    const response = await fetch('https://fdo.rocketlaunch.live/json/launches/next/30', {
+    const response = await fetch('https://fdo.rocketlaunch.live/json/launches', {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
@@ -36,7 +36,7 @@ export const fetchLaunches = async (): Promise<Launch[]> => {
     // Process launches sequentially to avoid rate limiting
     const launches = [];
     for (const launch of data2.result) {
-      const location = launch.pad.name;
+      const location = `${launch.pad.location.name}, ${launch.pad.location.country}`;
       const coordinates = await geocodeLocation(location);
       
       launches.push({
