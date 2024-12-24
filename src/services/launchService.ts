@@ -3,7 +3,7 @@ import { geocodeLocation } from '@/utils/geocoding';
 
 export const fetchLaunches = async (): Promise<Launch[]> => {
   try {
-    const response = await fetch('https://fdo.rocketlaunch.live/json/launches/next/5');
+    const response = await fetch('https://fdo.rocketlaunch.live/json/launches/next/30');
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
