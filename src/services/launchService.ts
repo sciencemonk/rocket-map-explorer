@@ -11,15 +11,12 @@ export const fetchLaunches = async (): Promise<Launch[]> => {
       .eq('key', 'ROCKETLAUNCH_API_KEY')
       .single();
 
-    if (keyError || !data) {
+    if (keyError || !data?.value) {
       console.error('Error fetching API key:', keyError);
-      throw new Error('Failed to fetch API key');
+      throw new Error('API key not found in settings');
     }
 
     const apiKey = data.value;
-    if (!apiKey) {
-      throw new Error('API key not found in settings');
-    }
 
     const response = await fetch('https://fdo.rocketlaunch.live/json/launches', {
       headers: {

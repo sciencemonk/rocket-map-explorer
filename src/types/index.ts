@@ -18,6 +18,10 @@ export interface LaunchResponse {
       name: string;
       latitude: string;
       longitude: string;
+      location: {
+        name: string;
+        country: string;
+      };
     };
     launch_description: string;
     provider: {
