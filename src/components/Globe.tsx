@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
 
 interface GlobeProps {
@@ -10,87 +10,144 @@ interface GlobeProps {
 
 const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapbox_token') || '');
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+
+  const handleSaveToken = () => {
+    localStorage.setItem('mapbox_token', mapboxToken);
+    window.location.reload();
+  };
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !mapboxToken) return;
 
-    // Initialize map
-    const map = L.map(mapContainer.current, {
-      center: [20, 0],
-      zoom: 2,
-      minZoom: 2,
-      worldCopyJump: true,
+    mapboxgl.accessToken = mapboxToken;
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/satellite-v9',
+      projection: 'globe',
+      zoom: 1.5,
+      center: [0, 20],
+      pitch: 45,
     });
 
-    mapInstance.current = map;
+    map.current.addControl(
+      new mapboxgl.NavigationControl({
+        visualizePitch: true,
+      }),
+      'top-right'
+    );
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    map.current.scrollZoom.disable();
 
-    // Add navigation controls
-    L.control.zoom({
-      position: 'topright'
-    }).addTo(map);
-
-    // Custom marker icon with glow effect
-    const customIcon = L.divIcon({
-      className: 'custom-marker',
-      html: '<div class="w-4 h-4 bg-primary rounded-full glow"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
+    map.current.on('style.load', () => {
+      map.current?.setFog({
+        color: 'rgb(255, 255, 255)',
+        'high-color': 'rgb(200, 200, 225)',
+        'horizon-blend': 0.2,
+      });
     });
 
-    // Update markers when launches change
-    launches.forEach((launch) => {
-      const marker = L.marker([launch.latitude, launch.longitude], {
-        icon: customIcon
-      }).addTo(map);
+    // Rotation animation
+    const secondsPerRevolution = 240;
+    const maxSpinZoom = 5;
+    const slowSpinZoom = 3;
+    let userInteracting = false;
+    let spinEnabled = true;
 
-      marker.on('click', () => onMarkerClick(launch));
-      markersRef.current.push(marker);
+    function spinGlobe() {
+      if (!map.current) return;
+      
+      const zoom = map.current.getZoom();
+      if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
+        let distancePerSecond = 360 / secondsPerRevolution;
+        if (zoom > slowSpinZoom) {
+          const zoomDif = (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
+          distancePerSecond *= zoomDif;
+        }
+        const center = map.current.getCenter();
+        center.lng -= distancePerSecond;
+        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
+      }
+    }
+
+    map.current.on('mousedown', () => {
+      userInteracting = true;
     });
+    
+    map.current.on('dragstart', () => {
+      userInteracting = true;
+    });
+    
+    map.current.on('mouseup', () => {
+      userInteracting = false;
+      spinGlobe();
+    });
+    
+    map.current.on('touchend', () => {
+      userInteracting = false;
+      spinGlobe();
+    });
+
+    map.current.on('moveend', () => {
+      spinGlobe();
+    });
+
+    spinGlobe();
 
     return () => {
-      // Clean up markers
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-      
-      // Remove map
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
+      map.current?.remove();
     };
+  }, [mapboxToken]);
+
+  // Update markers when launches change
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Remove existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Add new markers
+    launches.forEach((launch) => {
+      const el = document.createElement('div');
+      el.className = 'w-4 h-4 bg-primary rounded-full glow cursor-pointer';
+      
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([launch.longitude, launch.latitude])
+        .addTo(map.current!);
+
+      el.addEventListener('click', () => onMarkerClick(launch));
+      markersRef.current.push(marker);
+    });
   }, [launches, onMarkerClick]);
+
+  if (!mapboxToken) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <input
+          type="password"
+          className="px-4 py-2 bg-secondary rounded"
+          placeholder="Enter Mapbox token"
+          value={mapboxToken}
+          onChange={(e) => setMapboxToken(e.target.value)}
+        />
+        <button
+          className="px-4 py-2 bg-primary rounded"
+          onClick={handleSaveToken}
+        >
+          Save Token
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
-      <style>
-        {`
-          .custom-marker {
-            background: transparent;
-            border: none;
-          }
-          .glow {
-            box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073;
-            animation: glow 1.5s ease-in-out infinite alternate;
-          }
-          @keyframes glow {
-            from {
-              box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073;
-            }
-            to {
-              box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073;
-            }
-          }
-        `}
-      </style>
     </div>
   );
 };
