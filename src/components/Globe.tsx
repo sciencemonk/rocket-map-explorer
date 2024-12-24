@@ -16,6 +16,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,6 +82,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         'high-color': 'rgb(200, 200, 225)',
         'horizon-blend': 0.2,
       });
+      setMapLoaded(true);
     });
 
     const secondsPerRevolution = 240;
@@ -138,25 +140,34 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   }, [mapboxToken]);
 
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapLoaded) return;
 
+    console.log('Adding markers for launches:', launches);
+
+    // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
+    // Add new markers
     launches.forEach((launch) => {
-      const marker = createLaunchMarker({
-        launch,
-        map: map.current!,
-        onClick: handleLaunchClick
-      });
-      markersRef.current.push(marker);
+      if (launch.latitude && launch.longitude) {
+        console.log('Creating marker for launch:', launch.name, 'at:', launch.latitude, launch.longitude);
+        const marker = createLaunchMarker({
+          launch,
+          map: map.current!,
+          onClick: handleLaunchClick
+        });
+        markersRef.current.push(marker);
+      } else {
+        console.warn('Missing coordinates for launch:', launch.name);
+      }
     });
 
     return () => {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
     };
-  }, [launches]);
+  }, [launches, mapLoaded]);
 
   if (!mapboxToken) {
     return (
