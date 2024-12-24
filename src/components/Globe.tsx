@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
+import { MapPin } from 'lucide-react';
 
 interface GlobeProps {
   launches: Launch[];
@@ -114,6 +115,29 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     launches.forEach((launch) => {
       const el = document.createElement('div');
       el.className = 'w-4 h-4 bg-primary rounded-full glow cursor-pointer';
+      
+      // Create SVG icon
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '24');
+      svg.setAttribute('height', '24');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', 'currentColor');
+      svg.setAttribute('stroke-width', '2');
+      svg.setAttribute('stroke-linecap', 'round');
+      svg.setAttribute('stroke-linejoin', 'round');
+      
+      // Add map-pin path
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z');
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '12');
+      circle.setAttribute('cy', '10');
+      circle.setAttribute('r', '3');
+      
+      svg.appendChild(path);
+      svg.appendChild(circle);
+      el.appendChild(svg);
       
       const marker = new mapboxgl.Marker(el)
         .setLngLat([launch.longitude, launch.latitude])
