@@ -5,9 +5,11 @@ import { Launch } from '@/types';
 import Globe from '@/components/Globe';
 import LaunchList from '@/components/LaunchList';
 import LaunchModal from '@/components/LaunchModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [selectedLaunch, setSelectedLaunch] = useState<Launch | null>(null);
+  const isMobile = useIsMobile();
 
   const { data: launches = [], isLoading, error } = useQuery({
     queryKey: ['launches'],
@@ -37,20 +39,40 @@ const Index = () => {
           </a>
         </div>
       </nav>
-      <div className="flex flex-1">
-        <div className="w-1/3 p-4 border-r border-border">
-          <h1 className="text-2xl font-bold mb-4">Upcoming Launches</h1>
-          {isLoading ? (
-            <p>Loading launches...</p>
-          ) : error ? (
-            <p className="text-destructive">Error loading launches</p>
-          ) : (
-            <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
-          )}
-        </div>
-        <div className="w-2/3 flex items-center justify-center relative">
-          <Globe launches={launches} onMarkerClick={handleLaunchClick} />
-        </div>
+      <div className={`flex flex-1 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+        {isMobile ? (
+          <>
+            <div className="h-[50vh] w-full">
+              <Globe launches={launches} onMarkerClick={handleLaunchClick} />
+            </div>
+            <div className="w-full p-4">
+              <h1 className="text-2xl font-bold mb-4">Upcoming Launches</h1>
+              {isLoading ? (
+                <p>Loading launches...</p>
+              ) : error ? (
+                <p className="text-destructive">Error loading launches</p>
+              ) : (
+                <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-1/3 p-4 border-r border-border">
+              <h1 className="text-2xl font-bold mb-4">Upcoming Launches</h1>
+              {isLoading ? (
+                <p>Loading launches...</p>
+              ) : error ? (
+                <p className="text-destructive">Error loading launches</p>
+              ) : (
+                <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
+              )}
+            </div>
+            <div className="w-2/3 flex items-center justify-center relative">
+              <Globe launches={launches} onMarkerClick={handleLaunchClick} />
+            </div>
+          </>
+        )}
       </div>
       <LaunchModal
         launch={selectedLaunch}
