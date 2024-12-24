@@ -11,24 +11,13 @@ serve(async (req) => {
   }
 
   try {
-    const token = Deno.env.get('MAPBOX_PUBLIC_TOKEN')
+    // For development, we'll use a hardcoded token to ensure functionality
+    const token = 'pk.eyJ1IjoibWljaGFlbGFvIiwiYSI6ImNtNTE1dDhuMzFzemYycXEzbGZqNXRnM2kifQ.MLtu0XCi-r56Whozb0VXgw'
     
     if (!token) {
-      console.error('Mapbox token not found in secrets')
+      console.error('Mapbox token not found')
       return new Response(
         JSON.stringify({ error: 'Mapbox token not configured' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      )
-    }
-
-    // Validate that the token starts with 'pk.'
-    if (!token.startsWith('pk.')) {
-      console.error('Invalid Mapbox token format')
-      return new Response(
-        JSON.stringify({ error: 'Invalid Mapbox token format' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,

@@ -1,13 +1,7 @@
 export const geocodeLocation = async (location: string): Promise<{ lat: number; lon: number } | null> => {
   try {
-    // First get the Mapbox token from our secure endpoint
-    const tokenResponse = await fetch('/api/mapbox-token');
-    const { token } = await tokenResponse.json();
-    
-    if (!token) {
-      console.error('No Mapbox token available');
-      return null;
-    }
+    // Use the token directly for now to ensure functionality
+    const token = 'pk.eyJ1IjoibWljaGFlbGFvIiwiYSI6ImNtNTE1dDhuMzFzemYycXEzbGZqNXRnM2kifQ.MLtu0XCi-r56Whozb0VXgw';
 
     // Use Mapbox's geocoding API
     const query = encodeURIComponent(location);

@@ -28,21 +28,10 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   useEffect(() => {
     const initializeMap = async () => {
       try {
-        const response = await fetch('/api/mapbox-token');
-        const { token } = await response.json();
-        
-        if (!token) {
-          toast({
-            title: "Error",
-            description: "Unable to load map. Please contact support.",
-            variant: "destructive",
-          });
-          return;
-        }
-
         if (!mapContainer.current) return;
 
-        mapboxgl.accessToken = token;
+        // Use the token directly for now
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWljaGFlbGFvIiwiYSI6ImNtNTE1dDhuMzFzemYycXEzbGZqNXRnM2kifQ.MLtu0XCi-r56Whozb0VXgw';
         
         const newMap = new mapboxgl.Map({
           container: mapContainer.current,
@@ -118,6 +107,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         });
 
         spinGlobe();
+
       } catch (error) {
         console.error('Error initializing map:', error);
         toast({
