@@ -23,7 +23,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
           <span>🌍</span>
           Space Globe
         </h1>
