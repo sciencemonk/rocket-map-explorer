@@ -5,22 +5,14 @@ const Footer = () => {
         <div className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} Space Globe. All rights reserved.
         </div>
-        <div className="flex items-center gap-4">
+        <div>
           <a
-            href="https://github.com/yourusername/space-globe"
+            href="https://www.patreon.com/astroathens"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-primary transition-colors"
           >
-            GitHub
-          </a>
-          <a
-            href="https://www.rocketlaunch.live"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
-            Data: RocketLaunch.live
+            Support Space Globe
           </a>
         </div>
       </div>
