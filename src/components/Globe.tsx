@@ -25,6 +25,41 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     onMarkerClick(launch);
   };
 
+  const updateMarkerVisibility = () => {
+    if (!map.current) return;
+
+    const center = map.current.getCenter();
+    const zoom = map.current.getZoom();
+    const cameraBearing = map.current.getBearing();
+
+    markersRef.current.forEach((marker, index) => {
+      const markerLngLat = marker.getLngLat();
+      
+      // Calculate the angle between the marker and the center point
+      const angle = Math.atan2(
+        Math.sin(markerLngLat.lng - center.lng) * Math.cos(markerLngLat.lat),
+        Math.cos(center.lat) * Math.sin(markerLngLat.lat) -
+        Math.sin(center.lat) * Math.cos(markerLngLat.lat) * Math.cos(markerLngLat.lng - center.lng)
+      );
+
+      // Convert angle to degrees and normalize
+      const angleDeg = ((angle * 180) / Math.PI + 360) % 360;
+      
+      // Adjust for camera bearing
+      const adjustedAngle = (angleDeg - cameraBearing + 360) % 360;
+      
+      // Calculate if marker should be visible (within 90 degrees of center view)
+      const isVisible = Math.abs(adjustedAngle - 180) <= 90;
+      
+      // Get the marker element
+      const element = marker.getElement();
+      
+      // Update visibility
+      element.style.opacity = isVisible ? '1' : '0';
+      element.style.pointerEvents = isVisible ? 'auto' : 'none';
+    });
+  };
+
   useEffect(() => {
     const initializeMap = async () => {
       try {
@@ -61,6 +96,12 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           });
           setMapLoaded(true);
         });
+
+        // Add event listeners for marker visibility
+        newMap.on('rotate', updateMarkerVisibility);
+        newMap.on('pitch', updateMarkerVisibility);
+        newMap.on('zoom', updateMarkerVisibility);
+        newMap.on('move', updateMarkerVisibility);
 
         const secondsPerRevolution = 240;
         const maxSpinZoom = 5;
@@ -151,6 +192,9 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         console.warn('Missing coordinates for launch:', launch.name);
       }
     });
+
+    // Initial visibility check
+    updateMarkerVisibility();
 
     return () => {
       markersRef.current.forEach(marker => marker.remove());
