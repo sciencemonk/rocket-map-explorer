@@ -20,27 +20,12 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const { toast } = useToast();
 
-  const navigateToLaunch = (launch: Launch) => {
-    if (map.current && launch.latitude && launch.longitude) {
+  const handleLaunchClick = (launch: Launch) => {
+    if (map.current) {
       flyToLocation(map.current, launch.longitude, launch.latitude);
     }
-  };
-
-  const handleLaunchClick = (launch: Launch) => {
-    navigateToLaunch(launch);
     onMarkerClick(launch);
   };
-
-  // Expose navigation method through a custom property
-  useEffect(() => {
-    if (mapContainer.current) {
-      mapContainer.current.navigateToLaunch = (launch: Launch) => {
-        if (launch.latitude && launch.longitude) {
-          navigateToLaunch(launch);
-        }
-      };
-    }
-  }, [mapLoaded]);
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -61,11 +46,12 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           dragRotate: true,
           touchZoomRotate: true,
           touchPitch: true,
-          interactive: true
+          interactive: true // Ensure all interactions are enabled
         });
 
         map.current = newMap;
 
+        // Add navigation controls with all features enabled
         newMap.addControl(
           new mapboxgl.NavigationControl({
             visualizePitch: true,
@@ -76,35 +62,32 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         );
 
         newMap.on('style.load', () => {
-          if (!newMap || !newMap.loaded()) return;
-          
           newMap.setFog({
             color: 'rgb(255, 255, 255)',
             'high-color': 'rgb(200, 200, 225)',
             'horizon-blend': 0.2,
           });
-          
           setMapLoaded(true);
           
-          // Ensure the map container exists and the map is loaded before resizing
-          if (mapContainer.current && newMap.loaded()) {
-            setTimeout(() => {
-              newMap.resize();
-            }, 100);
-          }
+          // Force a resize event after a short delay to ensure proper rendering
+          setTimeout(() => {
+            newMap.resize();
+          }, 100);
         });
 
+        // Add event listeners for marker visibility
         const handleVisibility = () => updateMarkerVisibility(newMap, markersRef.current);
         newMap.on('rotate', handleVisibility);
         newMap.on('pitch', handleVisibility);
         newMap.on('zoom', handleVisibility);
         newMap.on('move', handleVisibility);
 
+        // Setup globe animation
         setupGlobeAnimation(newMap);
 
+        // Add resize handler for window changes
         const handleResize = () => {
-          // Only resize if map exists and is loaded
-          if (newMap && newMap.loaded() && mapContainer.current) {
+          if (newMap) {
             newMap.resize();
           }
         };
@@ -130,9 +113,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     return () => {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
-      if (map.current?.loaded()) {
-        map.current.remove();
-      }
+      map.current?.remove();
       map.current = null;
     };
   }, [toast]);
@@ -140,9 +121,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
+    // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
+    // Add new markers
     launches.forEach((launch) => {
       if (launch.latitude && launch.longitude) {
         const marker = createLaunchMarker({
@@ -154,6 +137,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       }
     });
 
+    // Initial visibility check
     if (map.current) {
       updateMarkerVisibility(map.current, markersRef.current);
     }

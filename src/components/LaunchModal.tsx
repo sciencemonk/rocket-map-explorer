@@ -4,25 +4,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Launch } from '@/types';
 import { format } from 'date-fns';
-import { MapPin } from 'lucide-react';
 
 interface LaunchModalProps {
   launch: Launch | null;
   onClose: () => void;
-  onGoToSite?: (launch: Launch) => void;
 }
 
-const LaunchModal = ({ launch, onClose, onGoToSite }: LaunchModalProps) => {
+const LaunchModal = ({ launch, onClose }: LaunchModalProps) => {
   if (!launch) return null;
-
-  const handleGoToSite = () => {
-    if (onGoToSite && launch) {
-      onGoToSite(launch);
-    }
-  };
 
   return (
     <Dialog open={!!launch} onOpenChange={onClose}>
@@ -49,13 +40,6 @@ const LaunchModal = ({ launch, onClose, onGoToSite }: LaunchModalProps) => {
             <h4 className="font-medium">Launch Provider</h4>
             <p className="text-sm">{launch.provider}</p>
           </div>
-          <Button 
-            onClick={handleGoToSite}
-            className="w-full mt-4"
-          >
-            <MapPin className="mr-2" />
-            Go to Launch Site
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

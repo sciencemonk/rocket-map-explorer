@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLaunches } from '@/services/launchService';
 import { Launch } from '@/types';
@@ -11,7 +11,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const Index = () => {
   const [selectedLaunch, setSelectedLaunch] = useState<Launch | null>(null);
   const isMobile = useIsMobile();
-  const globeRef = useRef<HTMLDivElement>(null);
 
   const { data: launches = [], isLoading, error } = useQuery({
     queryKey: ['launches'],
@@ -20,14 +19,6 @@ const Index = () => {
 
   const handleLaunchClick = (launch: Launch) => {
     setSelectedLaunch(launch);
-  };
-
-  const handleGoToSite = (launch: Launch) => {
-    // @ts-ignore - We know this exists because we added it
-    if (globeRef.current?.navigateToLaunch) {
-      // @ts-ignore - We know this exists because we added it
-      globeRef.current.navigateToLaunch(launch);
-    }
   };
 
   return (
@@ -54,7 +45,7 @@ const Index = () => {
       <div className={`flex flex-1 ${isMobile ? 'flex-col' : 'flex-row'}`}>
         {isMobile ? (
           <>
-            <div className="h-[50vh] w-full" ref={globeRef}>
+            <div className="h-[50vh] w-full">
               <Globe launches={launches} onMarkerClick={handleLaunchClick} />
             </div>
             <div className="w-full p-4">
@@ -80,7 +71,7 @@ const Index = () => {
                 <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
               )}
             </div>
-            <div className="w-2/3 flex items-center justify-center relative" ref={globeRef}>
+            <div className="w-2/3 flex items-center justify-center relative">
               <Globe launches={launches} onMarkerClick={handleLaunchClick} />
             </div>
           </>
@@ -90,7 +81,6 @@ const Index = () => {
       <LaunchModal
         launch={selectedLaunch}
         onClose={() => setSelectedLaunch(null)}
-        onGoToSite={handleGoToSite}
       />
     </div>
   );
