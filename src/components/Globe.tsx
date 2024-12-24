@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Launch } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface GlobeProps {
   launches: Launch[];
@@ -11,11 +13,68 @@ interface GlobeProps {
 const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapbox_token') || '');
+  const [mapboxToken, setMapboxToken] = useState('');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const { toast } = useToast();
 
-  const handleSaveToken = () => {
-    localStorage.setItem('mapbox_token', mapboxToken);
+  // Fetch token from Supabase on component mount
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'mapbox_token')
+        .single();
+
+      if (error) {
+        console.error('Error fetching Mapbox token:', error);
+        // Fallback to localStorage if Supabase fails
+        const localToken = localStorage.getItem('mapbox_token');
+        if (localToken) {
+          setMapboxToken(localToken);
+          // Migrate token to Supabase
+          handleSaveToken(localToken);
+        }
+        return;
+      }
+
+      if (data) {
+        setMapboxToken(data.value);
+      }
+    };
+
+    fetchMapboxToken();
+  }, []);
+
+  const handleSaveToken = async (token: string) => {
+    const { error: upsertError } = await supabase
+      .from('settings')
+      .upsert(
+        { 
+          key: 'mapbox_token', 
+          value: token,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'key' }
+      );
+
+    if (upsertError) {
+      console.error('Error saving token:', upsertError);
+      toast({
+        title: "Error saving token",
+        description: "There was a problem saving your Mapbox token. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMapboxToken(token);
+    // Remove from localStorage as we're now using Supabase
+    localStorage.removeItem('mapbox_token');
+    toast({
+      title: "Token saved",
+      description: "Your Mapbox token has been saved successfully.",
+    });
     window.location.reload();
   };
 
@@ -136,7 +195,7 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
         />
         <button
           className="px-4 py-2 bg-primary rounded"
-          onClick={handleSaveToken}
+          onClick={() => handleSaveToken(mapboxToken)}
         >
           Save Token
         </button>
