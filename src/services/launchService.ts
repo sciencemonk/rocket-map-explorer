@@ -1,4 +1,5 @@
 import { Launch, LaunchResponse } from '@/types';
+import { geocodeLocation } from '@/utils/geocoding';
 
 export const fetchLaunches = async (): Promise<Launch[]> => {
   try {
@@ -10,16 +11,25 @@ export const fetchLaunches = async (): Promise<Launch[]> => {
     
     const data: LaunchResponse = await response.json();
     
-    return data.result.map((launch) => ({
-      id: launch.id.toString(),
-      name: launch.name,
-      date: launch.date_str,
-      location: launch.pad.name,
-      details: launch.launch_description,
-      provider: launch.provider.name,
-      latitude: parseFloat(launch.pad.latitude),
-      longitude: parseFloat(launch.pad.longitude)
-    }));
+    // Process launches sequentially to avoid rate limiting
+    const launches = [];
+    for (const launch of data.result) {
+      const location = launch.pad.name;
+      const coordinates = await geocodeLocation(location);
+      
+      launches.push({
+        id: launch.id.toString(),
+        name: launch.name,
+        date: launch.date_str,
+        location: location,
+        details: launch.launch_description,
+        provider: launch.provider.name,
+        latitude: coordinates?.lat || parseFloat(launch.pad.latitude),
+        longitude: coordinates?.lon || parseFloat(launch.pad.longitude)
+      });
+    }
+    
+    return launches;
   } catch (error) {
     console.error('Error fetching launches:', error);
     throw error;
