@@ -46,12 +46,11 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           dragRotate: true,
           touchZoomRotate: true,
           touchPitch: true,
-          interactive: true // Ensure all interactions are enabled
+          interactive: true
         });
 
         map.current = newMap;
 
-        // Add navigation controls with all features enabled
         newMap.addControl(
           new mapboxgl.NavigationControl({
             visualizePitch: true,
@@ -69,20 +68,26 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
           });
           setMapLoaded(true);
           
-          // Force a resize event after a short delay to ensure proper rendering
-          setTimeout(() => {
-            newMap.resize();
-          }, 100);
+          // Force multiple resize events after the map is loaded
+          const resizeMap = () => {
+            if (newMap) {
+              newMap.resize();
+            }
+          };
+
+          // Trigger resize multiple times with increasing delays
+          resizeMap();
+          setTimeout(resizeMap, 100);
+          setTimeout(resizeMap, 500);
+          setTimeout(resizeMap, 1000);
         });
 
-        // Add event listeners for marker visibility
         const handleVisibility = () => updateMarkerVisibility(newMap, markersRef.current);
         newMap.on('rotate', handleVisibility);
         newMap.on('pitch', handleVisibility);
         newMap.on('zoom', handleVisibility);
         newMap.on('move', handleVisibility);
 
-        // Setup globe animation
         setupGlobeAnimation(newMap);
 
         // Add resize handler for window changes
@@ -96,6 +101,12 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
 
         return () => {
           window.removeEventListener('resize', handleResize);
+          markersRef.current.forEach(marker => marker.remove());
+          markersRef.current = [];
+          if (map.current) {
+            map.current.remove();
+            map.current = null;
+          }
         };
 
       } catch (error) {
@@ -109,23 +120,14 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
     };
 
     initializeMap();
-
-    return () => {
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-      map.current?.remove();
-      map.current = null;
-    };
   }, [toast]);
 
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
-    // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Add new markers
     launches.forEach((launch) => {
       if (launch.latitude && launch.longitude) {
         const marker = createLaunchMarker({
@@ -137,7 +139,6 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
       }
     });
 
-    // Initial visibility check
     if (map.current) {
       updateMarkerVisibility(map.current, markersRef.current);
     }
