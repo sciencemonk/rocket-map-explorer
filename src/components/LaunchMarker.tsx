@@ -69,12 +69,12 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
     tooltip.style.opacity = '0';
   });
 
-  // Create and add the marker
+  // Create and add the marker with improved positioning
   const marker = new mapboxgl.Marker({
     element: el,
     anchor: 'center',
-    rotationAlignment: 'map',
-    pitchAlignment: 'map'
+    rotationAlignment: 'viewport',
+    pitchAlignment: 'viewport'
   })
     .setLngLat([launch.longitude, launch.latitude])
     .addTo(map);
