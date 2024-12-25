@@ -21,11 +21,18 @@ const Index = () => {
     setSelectedLaunch(launch);
   };
 
+  const handleLogoClick = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
+          <h1 
+            onClick={handleLogoClick}
+            className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap cursor-pointer hover:text-primary/80 transition-colors"
+          >
             <span>🌍</span>
             Space Globe
           </h1>
