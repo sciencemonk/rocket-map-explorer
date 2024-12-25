@@ -27,13 +27,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4">
+      <nav className="bg-secondary/50 backdrop-blur-sm border-b border-border px-6 py-4 transition-colors duration-200">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <h1 
             onClick={handleLogoClick}
             className="text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap cursor-pointer hover:text-primary/80 transition-colors"
           >
-            <span>🌍</span>
+            <span className="animate-pulse">🌍</span>
             Space Globe
           </h1>
           <div className="text-sm text-muted-foreground text-right">
@@ -55,12 +55,16 @@ const Index = () => {
             <div className="h-[50vh] w-full">
               <Globe launches={launches} onMarkerClick={handleLaunchClick} />
             </div>
-            <div className="w-full p-4">
+            <div className="w-full p-4 animate-fade-in">
               <h1 className="text-2xl font-bold mb-4">Upcoming Launches</h1>
               {isLoading ? (
-                <p>Loading launches...</p>
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
               ) : error ? (
-                <p className="text-destructive">Error loading launches</p>
+                <div className="text-destructive bg-destructive/10 p-4 rounded-lg">
+                  Error loading launches. Please try again later.
+                </div>
               ) : (
                 <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
               )}
@@ -68,12 +72,16 @@ const Index = () => {
           </>
         ) : (
           <>
-            <div className="w-1/3 p-4 border-r border-border">
+            <div className="w-1/3 p-4 border-r border-border animate-fade-in">
               <h1 className="text-2xl font-bold mb-4">Upcoming Launches</h1>
               {isLoading ? (
-                <p>Loading launches...</p>
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
               ) : error ? (
-                <p className="text-destructive">Error loading launches</p>
+                <div className="text-destructive bg-destructive/10 p-4 rounded-lg">
+                  Error loading launches. Please try again later.
+                </div>
               ) : (
                 <LaunchList launches={launches} onLaunchClick={handleLaunchClick} />
               )}

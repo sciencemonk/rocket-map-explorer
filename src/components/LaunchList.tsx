@@ -11,11 +11,9 @@ interface LaunchListProps {
 const LaunchList = ({ launches, onLaunchClick }: LaunchListProps) => {
   const formatDate = (dateStr: string) => {
     try {
-      // Try to parse the date string
       const date = parseISO(dateStr);
       return format(date, "PPP 'at' p");
     } catch (error) {
-      // If parsing fails, return the original string
       console.error('Error parsing date:', error);
       return dateStr;
     }
@@ -27,14 +25,17 @@ const LaunchList = ({ launches, onLaunchClick }: LaunchListProps) => {
         {launches.map((launch) => (
           <Card
             key={launch.id}
-            className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+            className="p-4 hover:bg-muted/50 transition-all duration-200 cursor-pointer hover:scale-[1.02] hover:shadow-lg"
             onClick={() => onLaunchClick(launch)}
           >
-            <h3 className="font-bold text-lg">{launch.name}</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-bold text-lg text-primary">{launch.name}</h3>
+            <p className="text-sm text-muted-foreground mt-1">
               {formatDate(launch.date)}
             </p>
-            <p className="text-sm mt-2">{launch.location}</p>
+            <p className="text-sm mt-2 flex items-center gap-2">
+              <span className="text-primary">📍</span>
+              {launch.location}
+            </p>
           </Card>
         ))}
       </div>
