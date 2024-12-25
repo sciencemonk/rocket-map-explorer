@@ -1,57 +1,52 @@
 import mapboxgl from 'mapbox-gl';
 
-export const updateMarkerVisibility = (map: mapboxgl.Map, markers: mapboxgl.Marker[]) => {
+// Calculate if a point is visible on the globe
+function isPointVisible(map: mapboxgl.Map, lng: number, lat: number): boolean {
   const center = map.getCenter();
-  const cameraBearing = map.getBearing();
-  const cameraPitch = map.getPitch();
+  const zoom = map.getZoom();
   
-  // Convert pitch to radians
-  const pitchRadians = (cameraPitch * Math.PI) / 180;
+  // Calculate the angular distance between the point and the center of view
+  const R = 6371; // Earth's radius in km
+  const φ1 = center.lat * Math.PI / 180;
+  const φ2 = lat * Math.PI / 180;
+  const Δφ = (lat - center.lat) * Math.PI / 180;
+  const Δλ = (lng - center.lng) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+           Math.cos(φ1) * Math.cos(φ2) *
+           Math.sin(Δλ/2) * Math.sin(Δλ/2);
   
-  markers.forEach((marker) => {
-    const markerLngLat = marker.getLngLat();
-    
-    // Calculate the great circle distance between the center point and marker
-    const lambda1 = (center.lng * Math.PI) / 180;
-    const lambda2 = (markerLngLat.lng * Math.PI) / 180;
-    const phi1 = (center.lat * Math.PI) / 180;
-    const phi2 = (markerLngLat.lat * Math.PI) / 180;
-    
-    // Haversine formula for great circle angle
-    const deltaLambda = lambda2 - lambda1;
-    const deltaPhi = phi2 - phi1;
-    
-    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-              Math.cos(phi1) * Math.cos(phi2) *
-              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    // Convert to degrees
-    const angle = (c * 180) / Math.PI;
-    
-    // Calculate the bearing between center and marker
-    const y = Math.sin(deltaLambda) * Math.cos(phi2);
-    const x = Math.cos(phi1) * Math.sin(phi2) -
-             Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
-    let bearing = Math.atan2(y, x);
-    bearing = (bearing * 180) / Math.PI;
-    bearing = (bearing + 360) % 360;
-    
-    // Adjust bearing based on camera bearing
-    const adjustedBearing = (bearing - cameraBearing + 360) % 360;
-    
-    // Calculate visibility threshold based on pitch
-    const threshold = 90 + (cameraPitch / 2);
-    
-    // Check if marker is visible based on angle and adjusted bearing
-    const isVisible = angle <= threshold && Math.abs(adjustedBearing - 180) <= threshold;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+
+  // Adjust visibility threshold based on zoom level
+  const threshold = Math.max(90 - (zoom * 5), 30);
+  
+  // Convert distance to angular distance
+  const angularDistance = (distance / R) * (180 / Math.PI);
+  
+  return angularDistance <= threshold;
+}
+
+export const updateMarkerVisibility = (map: mapboxgl.Map, markers: mapboxgl.Marker[]) => {
+  if (!map || !markers.length) return;
+
+  const center = map.getCenter();
+  const bearing = map.getBearing();
+  const pitch = map.getPitch();
+
+  markers.forEach(marker => {
+    const coordinates = marker.getLngLat();
+    const isVisible = isPointVisible(map, coordinates.lng, coordinates.lat);
     
     const element = marker.getElement();
-    element.style.opacity = isVisible ? '1' : '0';
-    element.style.pointerEvents = isVisible ? 'auto' : 'none';
     
-    // Add smooth transition
-    element.style.transition = 'opacity 0.3s ease-in-out';
+    if (isVisible) {
+      element.style.opacity = '1';
+      element.style.transition = 'opacity 0.3s ease-in-out';
+    } else {
+      element.style.opacity = '0';
+      element.style.transition = 'opacity 0.3s ease-in-out';
+    }
   });
 };

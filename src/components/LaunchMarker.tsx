@@ -1,6 +1,5 @@
 import { Launch } from '@/types';
 import mapboxgl from 'mapbox-gl';
-import { Rocket } from 'lucide-react';
 
 interface CreateMarkerProps {
   launch: Launch;
