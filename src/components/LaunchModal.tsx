@@ -17,7 +17,7 @@ const LaunchModal = ({ launch, onClose }: LaunchModalProps) => {
 
   return (
     <Dialog open={!!launch} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="fixed top-20 right-4 max-w-[400px] shadow-xl bg-background/95 backdrop-blur-sm border-primary/20">
         <DialogHeader>
           <DialogTitle>{launch.name}</DialogTitle>
         </DialogHeader>
