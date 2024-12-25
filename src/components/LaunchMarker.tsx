@@ -20,7 +20,7 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   
   // Create image element
   const img = document.createElement('img');
-  img.src = '/lovable-uploads/094e23aa-6e9d-4a83-b625-ae96df78875e.png';
+  img.src = '/lovable-uploads/65a76590-13f3-41e7-b2e9-e8a253727f5c.png';
   img.style.width = '100%';
   img.style.height = '100%';
   img.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
