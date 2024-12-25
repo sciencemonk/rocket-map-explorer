@@ -150,8 +150,8 @@ const Globe = ({ launches, onMarkerClick }: GlobeProps) => {
   }, [launches, mapLoaded]);
 
   return (
-    <div className="relative w-full h-full flex items-start">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+    <div className="relative w-full h-full flex items-start overflow-hidden">
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg overflow-hidden" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
     </div>
   );
