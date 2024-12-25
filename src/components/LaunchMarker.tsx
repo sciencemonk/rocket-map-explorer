@@ -1,5 +1,6 @@
 import { Launch } from '@/types';
 import mapboxgl from 'mapbox-gl';
+import { Rocket } from 'lucide-react';
 
 interface CreateMarkerProps {
   launch: Launch;
@@ -11,22 +12,41 @@ export const createLaunchMarker = ({ launch, map, onClick }: CreateMarkerProps):
   // Create marker element
   const el = document.createElement('div');
   el.className = 'marker';
-  el.style.width = '32px';
-  el.style.height = '32px';
+  el.style.width = '24px';
+  el.style.height = '24px';
   el.style.position = 'relative';
   el.style.cursor = 'pointer';
   el.style.transformOrigin = 'center';
   el.style.transform = 'translate(-50%, -50%)';
   
-  // Create image element
-  const img = document.createElement('img');
-  img.src = '/lovable-uploads/65a76590-13f3-41e7-b2e9-e8a253727f5c.png';
-  img.style.width = '100%';
-  img.style.height = '100%';
-  img.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
-  img.style.transform = 'scale(1.2)';
-  
-  el.appendChild(img);
+  // Create SVG container
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '24');
+  svg.setAttribute('height', '24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', '#FF4444');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.style.filter = 'drop-shadow(0 0 8px rgba(255, 68, 68, 0.8))';
+  svg.style.transform = 'scale(1.2)';
+
+  // Add rocket paths
+  const paths = [
+    'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z',
+    'M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z',
+    'M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0',
+    'M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'
+  ];
+
+  paths.forEach(d => {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  });
+
+  el.appendChild(svg);
 
   // Add tooltip
   const tooltip = document.createElement('div');
